@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Jetchat</string>
 
+    <string name="web_client_id">499991389110-tkfbtrb1sief9vs6g1aadsnqob56r0up.apps.googleusercontent.com</string>
+
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="nav_header_title">Composer</string>
@@ -53,5 +55,16 @@
     <string name="touch_and_hold_to_record">Touch and hold to record</string>
     <string name="record_message">Record voice message</string>
     <string name="google_api_key">AIzaSyAJCWEPiN07U0lCl1tjIgnzCGLS16QJ-rc</string>
+
+    <string name="email">email</string>
+    <string name="password">password</string>
+    <string name="login">login</string>
+    <string name="dont_have_account">Do not have an account?\nClick here to sign up</string>
+    <string name="name">name</string>
+    <string name="signup">signup</string>
+    <string name="already_have_account">Already have an account?\nClick here to login</string>
+    <string name="welcome_back">Welcome Back</string>
+    <string name="empty" />
+    <string name="logout">logout</string>
 
 </resources>
