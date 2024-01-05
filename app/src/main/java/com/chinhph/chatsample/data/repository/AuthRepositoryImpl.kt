@@ -1,5 +1,6 @@
 package com.chinhph.chatsample.data.repository
 
+import com.chinhph.chatsample.domain.models.User
 import com.chinhph.chatsample.domain.repository.AuthRepository
 import com.chinhph.chatsample.domain.repository.OneTapSignInResponse
 import com.chinhph.chatsample.domain.repository.SignInWithGoogleResponse
@@ -10,6 +11,7 @@ import com.chinhph.chatsample.utils.Constants.PHOTO_URL
 import com.chinhph.chatsample.utils.Constants.SIGN_IN_REQUEST
 import com.chinhph.chatsample.utils.Constants.SIGN_UP_REQUEST
 import com.chinhph.chatsample.utils.Constants.USERS
+import com.chinhph.chatsample.utils.Constants.USER_ID
 import com.chinhph.chatsample.utils.Response
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.SignInClient
@@ -56,15 +58,22 @@ class AuthRepositoryImpl @Inject constructor(
             val authResult = auth.signInWithCredential(googleCredential).await()
             val isNewUser = authResult.additionalUserInfo?.isNewUser ?: false
             if (isNewUser) {
-                addUserToFirestore()
+                addUserToFireStore()
             }
-            Response.Success(true)
+            Response.Success(
+                User(
+                    userId = auth.currentUser?.uid,
+                    displayName = auth.currentUser?.displayName,
+                    email = auth.currentUser?.email,
+                    photoUrl = auth.currentUser?.photoUrl.toString()
+                )
+            )
         } catch (e: Exception) {
             Response.Failure(e)
         }
     }
 
-    private suspend fun addUserToFirestore() {
+    private suspend fun addUserToFireStore() {
         auth.currentUser?.apply {
             val user = toUser()
             db.collection(USERS).document(uid).set(user).await()
@@ -73,6 +82,7 @@ class AuthRepositoryImpl @Inject constructor(
 }
 
 fun FirebaseUser.toUser() = mapOf(
+    USER_ID to uid,
     DISPLAY_NAME to displayName,
     EMAIL to email,
     PHOTO_URL to photoUrl?.toString(),

@@ -1,11 +1,12 @@
 package com.chinhph.chatsample.domain.repository
 
+import com.chinhph.chatsample.domain.models.User
 import com.chinhph.chatsample.utils.Response
 import com.google.android.gms.auth.api.identity.BeginSignInResult
 import com.google.firebase.auth.AuthCredential
 
 typealias OneTapSignInResponse = Response<BeginSignInResult>
-typealias SignInWithGoogleResponse = Response<Boolean>
+typealias SignInWithGoogleResponse = Response<User>
 
 interface AuthRepository {
     val isUserAuthenticatedInFirebase: Boolean

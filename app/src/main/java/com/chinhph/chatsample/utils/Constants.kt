@@ -8,6 +8,7 @@ object Constants {
     const val USERS = "users"
 
     //User fields
+    const val USER_ID = "userId"
     const val DISPLAY_NAME = "displayName"
     const val EMAIL = "email"
     const val PHOTO_URL = "photoUrl"
@@ -25,7 +26,7 @@ object Constants {
     //Screens
     const val AUTH_SCREEN = "Authen screen"
     const val HOME_SCREEN = "Home screen"
-    const val PROFILE_SCREEN = "Profile"
+    const val CONVERSATION_SCREEN = "Conversation screen"
 
     //Messages
     const val REVOKE_ACCESS_MESSAGE = "You need to re-authenticate before revoking the access."

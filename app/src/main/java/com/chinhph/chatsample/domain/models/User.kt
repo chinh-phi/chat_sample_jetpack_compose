@@ -1,8 +1,9 @@
 package com.chinhph.chatsample.domain.models
 
 data class User(
-    val userId: String,
-    val name: String,
-    val avatarUrl: String,
-    val nickName: String
+    val userId: String? = null,
+    val displayName: String? = null,
+    val photoUrl: String? = null,
+    val nickName: String? = "abc",
+    val email: String? = "abc"
 )

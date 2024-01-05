@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chinhph.chatsample.data.repository.ChatConfigRepository
+import com.chinhph.chatsample.domain.models.User
 import com.chinhph.chatsample.domain.repository.AuthRepository
 import com.chinhph.chatsample.domain.repository.OneTapSignInResponse
 import com.chinhph.chatsample.domain.repository.SignInWithGoogleResponse
@@ -18,13 +20,14 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repo: AuthRepository,
+    private val configRepository: ChatConfigRepository,
     val oneTapClient: SignInClient
 ) : ViewModel() {
     val isUserAuthenticated get() = repo.isUserAuthenticatedInFirebase
 
     var oneTapSignInResponse by mutableStateOf<OneTapSignInResponse>(Response.Success(null))
         private set
-    var signInWithGoogleResponse by mutableStateOf<SignInWithGoogleResponse>(Response.Success(false))
+    var signInWithGoogleResponse by mutableStateOf<SignInWithGoogleResponse?>(null)
         private set
 
     fun oneTapSignIn() = viewModelScope.launch {
@@ -34,6 +37,10 @@ class AuthViewModel @Inject constructor(
 
     fun signInWithGoogle(googleCredential: AuthCredential) = viewModelScope.launch {
         oneTapSignInResponse = Response.Loading
+        signInWithGoogleResponse = Response.Loading
         signInWithGoogleResponse = repo.firebaseSignInWithGoogle(googleCredential)
+        if (signInWithGoogleResponse is Response.Success) {
+            configRepository.setUserId((signInWithGoogleResponse as Response.Success<User>).data?.userId.orEmpty())
+        }
     }
 }

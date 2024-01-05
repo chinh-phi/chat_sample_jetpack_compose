@@ -4,7 +4,11 @@ import android.app.Application
 import android.content.Context
 import com.chinhph.chatsample.R
 import com.chinhph.chatsample.data.repository.AuthRepositoryImpl
+import com.chinhph.chatsample.data.repository.ConversationRepositoryImpl
+import com.chinhph.chatsample.data.repository.MessageRepositoryImpl
 import com.chinhph.chatsample.domain.repository.AuthRepository
+import com.chinhph.chatsample.domain.repository.ConversationRepository
+import com.chinhph.chatsample.domain.repository.MessageRepository
 import com.chinhph.chatsample.utils.Constants.SIGN_IN_REQUEST
 import com.chinhph.chatsample.utils.Constants.SIGN_UP_REQUEST
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
@@ -98,4 +102,14 @@ class AppModule {
         signUpRequest = signUpRequest,
         db = db
     )
+
+    @Provides
+    fun provideConversationRepository(
+        db: FirebaseFirestore
+    ): ConversationRepository = ConversationRepositoryImpl(db = db)
+
+    @Provides
+    fun provideMessageRepository(
+        db: FirebaseFirestore
+    ): MessageRepository = MessageRepositoryImpl(db = db)
 }

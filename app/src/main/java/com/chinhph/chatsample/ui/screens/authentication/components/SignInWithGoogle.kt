@@ -16,12 +16,14 @@ fun SignInWithGoogle(
         is Response.Loading -> ProgressBar()
         is Response.Success -> signInWithGoogleResponse.data?.let { signedIn ->
             LaunchedEffect(signedIn) {
-                navigateToHomeScreen(signedIn)
+                navigateToHomeScreen(true)
             }
         }
 
         is Response.Failure -> LaunchedEffect(Unit) {
             print(signInWithGoogleResponse.e)
         }
+
+        else -> {}
     }
 }

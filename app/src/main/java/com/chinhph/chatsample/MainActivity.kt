@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.chinhph.chatsample.navigation.NavGraph
 import com.chinhph.chatsample.navigation.Screens
 import com.chinhph.chatsample.ui.screens.authentication.AuthViewModel
+import com.chinhph.chatsample.ui.screens.home.HomeViewModel
 import com.chinhph.chatsample.ui.theme.JetchatTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -20,6 +21,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private lateinit var navController: NavHostController
     private val viewModel by viewModels<AuthViewModel>()
+    private val homeViewModel by viewModels<HomeViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,7 +33,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NavGraph(navController = navController)
+                    NavGraph(navController = navController, homeViewModel = homeViewModel)
                 }
 
                 checkAuthState()

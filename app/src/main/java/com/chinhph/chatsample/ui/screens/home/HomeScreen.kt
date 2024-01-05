@@ -1,5 +1,6 @@
 package com.chinhph.chatsample.ui.screens.home
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +39,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -65,7 +69,8 @@ import com.chinhph.chatsample.domain.models.Conversation
 import com.chinhph.chatsample.navigation.Screens
 import com.chinhph.chatsample.ui.composables.CircleAvatar
 import com.chinhph.chatsample.ui.screens.home.composables.JetchatAppBar
-import com.chinhph.chatsample.utils.fakeConversations
+import com.chinhph.chatsample.utils.Response
+import com.chinhph.chatsample.utils.fakeConversation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,12 +85,17 @@ fun HomeScreen(
     val topBarState = rememberTopAppBarState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(topBarState)
 
+    val conversations = viewModel.conversations.collectAsState()
+
     Scaffold(
         topBar = {
             HomeAppBar(
                 title = stringResource(id = R.string.home_title),
                 onNavIconPressed = onNavIconPressed,
                 scrollBehavior = scrollBehavior,
+                onCreateNewConversationClick = {
+                    viewModel.createConversation(fakeConversation)
+                }
             )
         },
         contentWindowInsets = ScaffoldDefaults
@@ -100,11 +110,29 @@ fun HomeScreen(
                 .padding(paddingValues)
         ) {
             SearchBar()
-            ListConversation(
-                listConversation = fakeConversations,
-                scrollState = scrollState,
-                navController = navController
-            )
+            conversations.value.let {
+                when (it) {
+                    is Response.Failure -> {
+                        val context = LocalContext.current
+                        Toast.makeText(context, it.toString(), Toast.LENGTH_LONG).show()
+                    }
+
+                    is Response.Loading -> {
+                        CircularProgressIndicator()
+                    }
+
+                    is Response.Success -> {
+                        ListConversation(
+                            listConversation = it.data.orEmpty(),
+                            scrollState = scrollState,
+                            navController = navController,
+                            viewModel = viewModel
+                        )
+                    }
+
+                    else -> {}
+                }
+            }
         }
     }
 }
@@ -115,7 +143,8 @@ fun HomeAppBar(
     title: String,
     modifier: Modifier = Modifier,
     scrollBehavior: TopAppBarScrollBehavior? = null,
-    onNavIconPressed: () -> Unit = { }
+    onNavIconPressed: () -> Unit = { },
+    onCreateNewConversationClick: () -> Unit = {}
 ) {
     JetchatAppBar(
         modifier = modifier,
@@ -133,9 +162,7 @@ fun HomeAppBar(
                 imageVector = Icons.Outlined.Create,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .clickable(onClick = {
-
-                    })
+                    .clickable(onClick = onCreateNewConversationClick)
                     .padding(horizontal = 12.dp, vertical = 16.dp)
                     .height(24.dp),
                 contentDescription = stringResource(id = R.string.search)
@@ -186,7 +213,8 @@ fun ListConversation(
     modifier: Modifier = Modifier,
     listConversation: List<Conversation>,
     scrollState: LazyListState,
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
     Box(
         modifier = modifier
@@ -204,9 +232,10 @@ fun ListConversation(
                 item {
                     ConversationCompose(
                         onConversationClick = { conversationId ->
-                            navController.navigate(Screens.ConversationScreen.route)
+                            navController.navigate(Screens.ConversationScreen.route + "/$conversationId")
                         },
-                        conversation = conversation
+                        conversation = conversation,
+                        viewModel = viewModel
                     )
                 }
             }
@@ -218,31 +247,35 @@ fun ListConversation(
 fun ConversationCompose(
     modifier: Modifier = Modifier,
     onConversationClick: (String) -> Unit,
-    conversation: Conversation
+    conversation: Conversation,
+    viewModel: HomeViewModel
 ) {
     Row(
         modifier = modifier
             .clickable {
-                onConversationClick(conversation.id)
+                onConversationClick(conversation.id.toString())
             }
             .fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val userPartner = conversation.members?.firstOrNull { it.userId != viewModel.getUserId() }
+        val photoUrl = userPartner?.photoUrl.toString()
+        val nickName = userPartner?.nickName.toString()
         CircleAvatar(
             modifier = modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
             size = 56.dp,
-            imageUrl = conversation.userReceive.avatarUrl
+            imageUrl = photoUrl
         )
         Spacer(modifier = modifier.width(8.dp))
         Box(modifier = modifier.weight(1f)) {
             Column {
                 Text(
-                    text = conversation.userReceive.nickName,
+                    text = nickName,
                     style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 )
                 Spacer(modifier = modifier.height(4.dp))
                 Text(
-                    text = conversation.lastMessage.message,
+                    text = conversation.lastMessage?.message.toString(),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = TextStyle(
@@ -253,10 +286,10 @@ fun ConversationCompose(
         }
         Spacer(modifier = modifier.width(8.dp))
         Image(
-            painter = if (conversation.userReceive.avatarUrl.isEmpty())
+            painter = if (photoUrl.isEmpty())
                 painterResource(R.drawable.avatar_sample)
             else
-                rememberAsyncImagePainter(conversation.userReceive.avatarUrl),
+                rememberAsyncImagePainter(photoUrl),
             contentDescription = "avatar",
             contentScale = ContentScale.Crop,            // crop the image if it's not a square
             modifier = modifier
