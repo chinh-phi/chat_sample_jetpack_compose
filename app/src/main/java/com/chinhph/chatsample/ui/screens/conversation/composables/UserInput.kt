@@ -3,7 +3,6 @@ package com.chinhph.chatsample.ui.screens.conversation.composables
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
@@ -33,6 +32,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.rounded.AddCircle
 import androidx.compose.material.icons.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.Cancel
@@ -72,7 +73,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -159,6 +159,10 @@ fun UserInput(
         isExpanded = it > 0
     })
 
+    var isSendEnable by remember {
+        mutableStateOf(false)
+    }
+
     Surface(tonalElevation = 2.dp, contentColor = MaterialTheme.colorScheme.secondary) {
         Column {
             AnimatedVisibility(visible = !isExpanded) {
@@ -183,9 +187,7 @@ fun UserInput(
                             sendMessageEnabled = textState.text.isNotBlank(),
                             onMessageSent = {
                                 onMessageSent(textState.text)
-                                // Reset text field and close keyboard
                                 textState = TextFieldValue()
-                                // Move scroll to bottom
                                 resetScroll()
                                 dismissKeyboard()
                             },
@@ -216,6 +218,10 @@ fun UserInput(
                             }
                             textFieldFocusState = focused
                         },
+                        onMessageSent = {
+                            onMessageSent(textState.text)
+                            textState = TextFieldValue()
+                        },
                         onTextFieldExpanded = { isExpanded ->
                             isTextFieldExpand = isExpanded
                         },
@@ -226,9 +232,21 @@ fun UserInput(
                         isTextFieldExpand = isTextFieldExpand,
                         modifier = modifier
                             .weight(1f),
-                        focusRequester = focusRequester
+                        focusRequester = focusRequester,
+                        onSendEnable = { isEnable ->
+                            isSendEnable = isEnable
+                        }
                     )
-                    UserFastEmoji()
+                    UserFastEmoji(
+                        isSendEnable = isSendEnable,
+                        onFastEmojiSent = {
+
+                        },
+                        onMessageSent = {
+                            onMessageSent(textState.text)
+                            textState = TextFieldValue()
+                        }
+                    )
                 }
             }
             SelectorExpanded(
@@ -250,6 +268,8 @@ private fun UserInputText(
     keyboardType: KeyboardType = KeyboardType.Text,
     onTextChanged: (TextFieldValue) -> Unit,
     textFieldValue: TextFieldValue,
+    onMessageSent: (String) -> Unit,
+    onSendEnable: (Boolean) -> Unit,
     keyboardShown: Boolean,
     onTextFieldFocused: (Boolean) -> Unit,
     onTextFieldExpanded: (Boolean) -> Unit,
@@ -265,6 +285,8 @@ private fun UserInputText(
             onTextChanged,
             onTextFieldFocused,
             onTextFieldExpanded,
+            onSendEnable,
+            onMessageSent,
             isTextFieldExpand,
             keyboardType,
             isFirstTimeFocus,
@@ -284,6 +306,8 @@ private fun UserInputTextField(
     onTextChanged: (TextFieldValue) -> Unit,
     onTextFieldFocused: (Boolean) -> Unit,
     onTextFieldExpanded: (Boolean) -> Unit,
+    onSendEnable: (Boolean) -> Unit,
+    onMessageSent: (String) -> Unit,
     isTextFieldExpand: Boolean,
     keyboardType: KeyboardType,
     isFirstTimeFocus: Boolean,
@@ -293,6 +317,9 @@ private fun UserInputTextField(
 ) {
     var lastFocusState by remember { mutableStateOf(false) }
     var textFieldLoaded by remember { mutableStateOf(false) }
+
+    if (textFieldValue.text.isEmpty() || textFieldValue.text.isBlank()) onSendEnable(false)
+
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -305,7 +332,11 @@ private fun UserInputTextField(
         Box(contentAlignment = Alignment.CenterStart, modifier = modifier.weight(1f)) {
             BasicTextField(
                 value = textFieldValue,
-                onValueChange = { onTextChanged(it) },
+                onValueChange = {
+                    onTextChanged(it)
+                    onTextFieldExpanded(true)
+                    onSendEnable(it.text.isNotEmpty() && it.text.isNotBlank())
+                },
                 modifier = modifier
                     .padding(start = 12.dp, end = 8.dp)
                     .onFocusChanged { state ->
@@ -326,7 +357,12 @@ private fun UserInputTextField(
                     },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = keyboardType,
-                    imeAction = ImeAction.Send
+                    imeAction = ImeAction.Send,
+                ),
+                keyboardActions = KeyboardActions(
+                    onSend = {
+                        onMessageSent(textFieldValue.text)
+                    }
                 ),
                 maxLines = 1,
                 textStyle = TextStyle(color = Color.Black)
@@ -432,19 +468,37 @@ fun SelectorButton(
 
 @Composable
 fun UserFastEmoji(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSendEnable: Boolean = false,
+    onMessageSent: () -> Unit,
+    onFastEmojiSent: () -> Unit,
 ) {
-    IconButton(
-        onClick = {},
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Accessibility,
-            tint = Color.Blue,
-            modifier = Modifier
-                .padding(8.dp)
-                .size(56.dp),
-            contentDescription = "fast emoji"
-        )
+    if (isSendEnable) {
+        IconButton(
+            onClick = onMessageSent
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Send,
+                tint = Color.Blue,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(56.dp),
+                contentDescription = "fast emoji"
+            )
+        }
+    } else {
+        IconButton(
+            onClick = onFastEmojiSent
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Accessibility,
+                tint = Color.Blue,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(56.dp),
+                contentDescription = "fast emoji"
+            )
+        }
     }
 }
 
