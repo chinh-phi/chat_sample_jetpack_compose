@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
@@ -27,10 +28,16 @@ fun CircleAvatar(
         else
             rememberAsyncImagePainter(imageUrl),
         contentDescription = "avatar",
-        contentScale = ContentScale.Crop,            // crop the image if it's not a square
+        contentScale = ContentScale.Crop,
         modifier = modifier
             .size(size)
-            .clip(CircleShape)                       // clip to the circle shape
-            .border(2.dp, Color.Gray, CircleShape)   // add a border (optional)
+            .clip(CircleShape)
+            .border(2.dp, Color.Gray, CircleShape)
     )
+}
+
+@Preview
+@Composable
+fun CircleAvatarPreview() {
+    CircleAvatar()
 }

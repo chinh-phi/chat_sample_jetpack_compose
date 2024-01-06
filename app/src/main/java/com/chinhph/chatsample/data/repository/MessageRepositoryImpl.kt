@@ -28,6 +28,10 @@ class MessageRepositoryImpl @Inject constructor(
             db.collection("messages").document(it)
                 .update("nextMessageId", refId)
         }
+
+        db.collection("conversations").document(newMessage.conversationId.orEmpty())
+            .update("lastMessage", newMessage)
+
         awaitClose {
 
         }
